@@ -14,18 +14,18 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server = ""
 default_call = "/bin/sh"
+run = True
 
 def scan_args():
     global args
     parser = argparse.ArgumentParser(description="Netcat Copy Cat")
     parser.add_argument("client_ip", nargs="?", type=str)
     parser.add_argument("client_port", nargs="?", type=int)
-    parser.add_argument("-l","--listen", dest="server_ip", type=str)
+    parser.add_argument("-l","--listen", dest="server_ip", action="store_const", const="localhost")
     parser.add_argument("-p", "--port", dest="server_port", type=int)
     parser.add_argument("-e", help="execute filename", dest="exec_file", nargs="?", type=str)
     parser.add_argument("-c", help="execute command", dest="exec_command",nargs="?", type=str)
     args = parser.parse_args()
-    print args
     
 def init_client(sock, ip, port):
     sock.connect((ip,port))
@@ -38,16 +38,14 @@ def init_server(sock, ip, port):
         global server
         server,addr = sock.accept()
         client,server = server,client
-        print "Incoming Connection\nIp: %s\nPort: %s" % (addr[0], addr[1])
+        #print "Incoming Connection\nIp: %s\nPort: %s" % (addr[0], addr[1])
         #print "Client: %s" % client 
         break
 def init_socket(sock):
     global args
     if args.server_ip:
-        print "init server"
         init_server(sock, args.server_ip, args.server_port)
     else:
-        print "init client"
         init_client(sock, args.client_ip, args.client_port)
         
 def check_fd(sock):
@@ -74,17 +72,23 @@ def write_loop(sock):
             write_data(sock,buf)
 
 def read_loop(sock):
+    global run
     while True:
         buf = read_data(sock)
         if len(buf):
             sys.stdout.write(buf)
+        else:
+            run = False
 
 def exec_loop(sock):
+    global run
     global default_call
     while True:
         buf = read_data(sock)
         if len(buf):
             write_data(sock, subprocess.check_output(buf, shell=True, executable=default_call))
+        else:
+            run = False
 
 def exec_command(sock):
     if args.exec_command:
@@ -100,6 +104,7 @@ def exec_file():
 
 def main():
     global client
+    global run
     try:
         scan_args()
         init_socket(client)
@@ -114,15 +119,12 @@ def main():
         for t in threads:
             t.daemon = True
             t.start()
-        while True:
-            time.sleep(1000)
+        while run:
+            time.sleep(1)
     except SystemExit:
-        print " Exiting "
-        client.close()
+        pass
     except KeyboardInterrupt:
-        print " Terminating "
-    
+        pass
     finally:
         client.close()
 main()
-
