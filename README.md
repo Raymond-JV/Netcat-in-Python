@@ -1,6 +1,6 @@
 # Netcat-in-Python
 
-This is one of my first projects written in python. I used argparse for the command line interface.
+This is one of my first projects written in python. Argparse was used for the command line interface.
 
 ##### The exec flag enables the pwd command to run on the target machine
 ![netcat_exec](https://user-images.githubusercontent.com/23642921/61589322-1ee2d080-ab5d-11e9-8b4f-28caa7ddbe06.png)
